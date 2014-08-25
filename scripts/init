@@ -1,0 +1,50 @@
+#!/bin/bash
+set -ex
+
+export OPENNMS_HOME=/usr/share/opennms
+export OPENNMS_PIDFILE=/var/run/opennms/opennms.pid
+
+DATABASE_HOST=${DATABASE_HOST:-localhost}
+DATABASE_PORT=${DATABASE_PORT:-5432}
+
+# is a postgresql database linked?
+if [ -n "${POSTGRESQL_PORT_5432_TCP_ADDR}" ]; then
+  DATABASE_HOST=${DATABASE_HOST:-${POSTGRESQL_PORT_5432_TCP_ADDR}}
+  DATABASE_PORT=${DATABASE_PORT:-${POSTGRESQL_PORT_5432_TCP_PORT}}
+fi
+
+# Run a local postgresql server if necessary
+if [ "${DATABASE_HOST}" == "localhost" ]; then
+  # Open up postgresql security
+  sed -i -e 's/peer/trust/g' -e 's/md5/trust/g' /etc/postgresql/*/main/pg_hba.conf
+
+  echo "Starting postgresql ..."
+  /etc/init.d/postgresql start
+fi
+
+echo "Starting opennms ..."
+/etc/init.d/opennms start
+
+# wait for opennms server to start (max 120 seconds)
+timeout=120
+while ! opennms -v status
+do
+  timeout=$(expr $timeout - 1)
+  if [ $timeout -eq 0 ]; then
+    echo "Failed to start opennms daemon"
+    exit 1
+  fi
+  sleep 1
+done
+
+[ -n "$INTENTIONALLY_SLEEP" ] && sleep $INTENTIONALLY_SLEEP
+
+${OPENNMS_HOME}/bin/config-tester || true
+${OPENNMS_HOME}/bin/install -dis
+/usr/sbin/install_iplike.sh || true
+
+# Wait here until opennms exits
+wait $(cat ${OPENNMS_PIDFILE})
+
+# As the ENTRYPOINT script, when this exits the docker container will Exit.
+exit 0
