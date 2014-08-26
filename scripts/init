@@ -2,7 +2,8 @@
 set -ex
 
 export OPENNMS_HOME=/usr/share/opennms
-export OPENNMS_PIDFILE=/var/run/opennms.pid
+
+OPENNMS_PIDFILE=/var/run/opennms.pid
 
 PG_HOST=${PG_HOST:-${DB_PORT_5432_TCP_ADDR:-localhost}}
 PG_PORT=${PG_PORT:-${DB_PORT_5432_TCP_PORT:-5432}}
@@ -16,7 +17,7 @@ if [ "${PG_USER}" == "postgres" ]; then
   unset PG_USER
 fi
 
-[ -f /etc/opennms/opennms-datasources.xml /etc/opennms/opennms-datasources.xml.orig ] && \
+[ -f /etc/opennms/opennms-datasources.xml ] && \
   mv -f /etc/opennms/opennms-datasources.xml /etc/opennms/opennms-datasources.xml.orig
 
 cat <<EOF > /etc/opennms/opennms-datasources.xml
@@ -26,12 +27,12 @@ cat <<EOF > /etc/opennms/opennms-datasources.xml
   xsi:schemaLocation="http://xmlns.opennms.org/xsd/config/opennms-datasources
   http://www.opennms.org/xsd/config/opennms-datasources.xsd ">
 
-  <connection-pool factory="${PG_CONNECTION_FACTORY:-org.opennms.core.db.C3P0ConnectionFactory}"
-    idleTimeout="${PG_IDLE_TIMEOUT:-600}"
-    loginTimeout="${PG_LOGIN_TIMEOUT:-3}"
-    minPool="${PG_MIN_POOL:-10}"
-    maxPool="${PG_MAX_POOL:-50}"
-    maxSize="${PG_MAX_SIZE:-500}" />
+  <connection-pool factory="${JDBC_CONNECTION_FACTORY:-org.opennms.core.db.C3P0ConnectionFactory}"
+    idleTimeout="${JDBC_IDLE_TIMEOUT:-600}"
+    loginTimeout="${JDBC_LOGIN_TIMEOUT:-3}"
+    minPool="${JDBC_MIN_POOL:-10}"
+    maxPool="${JDBC_MAX_POOL:-50}"
+    maxSize="${JDBC_MAX_SIZE:-500}" />
 
   <jdbc-data-source name="opennms"
                     database-name="${PG_DATABASE}"
@@ -78,8 +79,8 @@ ${OPENNMS_HOME}/bin/install -dis
 echo "Starting opennms ..."
 /etc/init.d/opennms start
 
-# wait for opennms server to start (max 120 seconds)
-timeout=120
+# wait for opennms server to start (max 300 seconds)
+timeout=300
 while ! opennms -v status
 do
   timeout=$(expr $timeout - 1)
