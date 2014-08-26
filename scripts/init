@@ -12,6 +12,43 @@ PG_PASS="${PG_PASS:-${DB_ENV_PASS:-}}"
 
 export PG_HOST PG_PORT PG_DATABASE PG_USER PG_PASS
 
+if [ "${PG_USER}" == "postgres" ]; then
+  unset PG_USER
+fi
+
+[ -f /etc/opennms/opennms-datasources.xml /etc/opennms/opennms-datasources.xml.orig ] && \
+  mv -f /etc/opennms/opennms-datasources.xml /etc/opennms/opennms-datasources.xml.orig
+
+cat <<EOF > /etc/opennms/opennms-datasources.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<datasource-configuration xmlns:this="http://xmlns.opennms.org/xsd/config/opennms-datasources"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://xmlns.opennms.org/xsd/config/opennms-datasources
+  http://www.opennms.org/xsd/config/opennms-datasources.xsd ">
+
+  <connection-pool factory="${PG_CONNECTION_FACTORY:-org.opennms.core.db.C3P0ConnectionFactory}"
+    idleTimeout="${PG_IDLE_TIMEOUT:-600}"
+    loginTimeout="${PG_LOGIN_TIMEOUT:-3}"
+    minPool="${PG_MIN_POOL:-10}"
+    maxPool="${PG_MAX_POOL:-50}"
+    maxSize="${PG_MAX_SIZE:-500}" />
+
+  <jdbc-data-source name="opennms"
+                    database-name="${PG_DATABASE}"
+                    class-name="org.postgresql.Driver"
+                    url="jdbc:postgresql://${PG_HOST}:${PG_PORT}/${PG_DATABASE}"
+                    user-name="${PG_USER}"
+                    password="${PG_PASS}" />
+
+  <jdbc-data-source name="opennms-admin"
+                    database-name="template1"
+                    class-name="org.postgresql.Driver"
+                    url="jdbc:postgresql://${PG_HOST}:${PG_PORT}/template1"
+                    user-name="${PG_USER}"
+                    password="${PG_PASS}" />
+</datasource-configuration>
+EOF
+
 # Run a local postgresql server if necessary
 if [ "${PG_HOST}" == "localhost" ]; then
   # Open up postgresql security
@@ -28,14 +65,6 @@ if [ "${PG_HOST}" == "localhost" ]; then
   sudo -u postgres psql template0 -c "update pg_database set datistemplate = TRUE where datname = 'template1';"
   sudo -u postgres psql template1 -c "update pg_database set datallowconn = FALSE where datname = 'template0';"
 fi
-
-if [ "${PG_USER}" == "postgres" ]; then
-  unset PG_USER
-fi
-
-JDBC_PARAMS=${PG_USER:+\?user=${PG_USER}}${PG_PASS:+\&password=${PG_PASS}}${PG_USE_SSL:+\&ssl=true}
-perl -pi -e "s%jdbc:postgresql//localhost:5432/opennms%/jdbc:postgresql://${PG_HOST}:${PG_PORT}/${PG_DATABASE}${JDBC_PARAMS}%g" $(grep -r 'jdbc:postgresql://localhost:5432/opennms' /etc/opennms/ | cut -d: -f1 | uniq)
-perl -pi -e "s%jdbc:postgresql//localhost:5432/template0%/jdbc:postgresql://${PG_HOST}:${PG_PORT}/template0${JDBC_PARAMS}%g" $(grep -r 'jdbc:postgresql://localhost:5432/template0' /etc/opennms/ | cut -d: -f1 | uniq)
 
 [ -n "$INTENTIONALLY_SLEEP" ] && sleep $INTENTIONALLY_SLEEP
 
