@@ -4,12 +4,13 @@ set -ex
 export OPENNMS_HOME=/usr/share/opennms
 export OPENNMS_PIDFILE=/var/run/opennms.pid
 
-PG_DATABASE=${PG_DATABASE:-opennms}
-PG_USER=${PG_USER:-postgres}
-PG_HOST=${PG_HOST:-${POSTGRESQL_PORT_5432_TCP_ADDR:-localhost}}
-PG_PORT=${PG_PORT:-${POSTGRESQL_PORT_5432_TCP_PORT:-5432}}
+PG_HOST=${PG_HOST:-${DB_PORT_5432_TCP_ADDR:-localhost}}
+PG_PORT=${PG_PORT:-${DB_PORT_5432_TCP_PORT:-5432}}
+PG_DATABASE=${PG_DATABASE:-${DB_ENV_DB:-opennms}}
+PG_USER=${PG_USER:-${DB_ENV_USER:-postgres}}
+PG_PASS="${PG_PASS:-${DB_ENV_PASS:-}}"
 
-export PG_HOST PG_PORT PG_DATABASE PG_USER
+export PG_HOST PG_PORT PG_DATABASE PG_USER PG_PASS
 
 # Run a local postgresql server if necessary
 if [ "${PG_HOST}" == "localhost" ]; then
