@@ -28,6 +28,14 @@ if [ "${PG_HOST}" == "localhost" ]; then
   sudo -u postgres psql template1 -c "update pg_database set datallowconn = FALSE where datname = 'template0';"
 fi
 
+if [ "${PG_USER}" == "postgres" ]; then
+  unset PG_USER
+fi
+
+JDBC_PARAMS=${PG_USER:+\?user=${PG_USER}}${PG_PASS:+\&password=${PG_PASS}}${PG_USE_SSL:+\&ssl=true}
+perl -pi -e "s%jdbc:postgresql//localhost:5432/opennms%/jdbc:postgresql://${PG_HOST}:${PG_PORT}/${PG_DATABASE}${JDBC_PARAMS}%g" $(grep -r 'jdbc:postgresql://localhost:5432/opennms' /etc/opennms/ | cut -d: -f1 | uniq)
+perl -pi -e "s%jdbc:postgresql//localhost:5432/template0%/jdbc:postgresql://${PG_HOST}:${PG_PORT}/template0${JDBC_PARAMS}%g" $(grep -r 'jdbc:postgresql://localhost:5432/template0' /etc/opennms/ | cut -d: -f1 | uniq)
+
 [ -n "$INTENTIONALLY_SLEEP" ] && sleep $INTENTIONALLY_SLEEP
 
 perl -pi -e 's/^JAVA/#JAVA/' /etc/default/opennms
