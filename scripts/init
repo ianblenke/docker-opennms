@@ -13,10 +13,6 @@ PG_PASS="${PG_PASS:-${DB_ENV_PASS:-}}"
 
 export PG_HOST PG_PORT PG_DATABASE PG_USER PG_PASS
 
-if [ "${PG_USER}" == "postgres" ]; then
-  unset PG_USER
-fi
-
 [ -f /etc/opennms/opennms-datasources.xml ] && \
   mv -f /etc/opennms/opennms-datasources.xml /etc/opennms/opennms-datasources.xml.orig
 
@@ -49,6 +45,7 @@ cat <<EOF > /etc/opennms/opennms-datasources.xml
                     password="${PG_PASS}" />
 </datasource-configuration>
 EOF
+cat /etc/opennms/opennms-datasources.xml
 
 # Run a local postgresql server if necessary
 if [ "${PG_HOST}" == "localhost" ]; then
