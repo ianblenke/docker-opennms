@@ -3,7 +3,7 @@ OpenNMS for docker with multiple container linkage
 
 This image runs a linkable [OpenNMS](https://http://www.opennms.org/)
 
-There is an automated build repository on docker hub for [ianblenke/docker-opennms](https://registry.hub.docker.com/builds/github/ianblenke/docker-opennms/).
+There is an automated build repository on docker hub for [ianblenke/opennms](https://registry.hub.docker.com/u/ianblenke/opennms/).
 
 This project was roughly based on the [sameersbn/gitlab](https://registry.hub.docker.com/u/sameersbn/gitlab/) project.
 
