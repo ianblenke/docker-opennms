@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -e
 
 export OPENNMS_HOME=/usr/share/opennms
 
@@ -45,7 +45,6 @@ cat <<EOF > /etc/opennms/opennms-datasources.xml
                     password="${PG_PASS}" />
 </datasource-configuration>
 EOF
-cat /etc/opennms/opennms-datasources.xml
 
 # Run a local postgresql server if necessary
 if [ "${PG_HOST}" == "localhost" ]; then
@@ -70,7 +69,7 @@ perl -pi -e 's/^JAVA/#JAVA/' /etc/default/opennms
 echo JAVA_HOME=/usr/lib/jvm/$(ls -1t /usr/lib/jvm | head -1) >> /etc/default/opennms
 
 ${OPENNMS_HOME}/bin/install -dis
-/usr/sbin/install_iplike.sh || true
+yes | /usr/sbin/install_iplike.sh || true
 #${OPENNMS_HOME}/bin/config-tester || true
 
 echo "Starting opennms ..."
@@ -87,6 +86,9 @@ do
   fi
   sleep 1
 done
+
+# Start tailing the opennms logs:
+tail -f $(find /var/log/opennms/ -name '*.log') &
 
 # Wait here until opennms exits
 OPENNMS_PID=$(cat ${OPENNMS_PIDFILE})
