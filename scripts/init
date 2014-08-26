@@ -2,7 +2,7 @@
 set -ex
 
 export OPENNMS_HOME=/usr/share/opennms
-export OPENNMS_PIDFILE=/var/run/opennms/opennms.pid
+export OPENNMS_PIDFILE=/var/run/opennms.pid
 
 PG_DATABASE=${PG_DATABASE:-opennms}
 PG_USER=${PG_USER:-postgres}
@@ -35,7 +35,7 @@ echo JAVA_HOME=/usr/lib/jvm/$(ls -1t /usr/lib/jvm | head -1) >> /etc/default/ope
 
 ${OPENNMS_HOME}/bin/install -dis
 /usr/sbin/install_iplike.sh || true
-${OPENNMS_HOME}/bin/config-tester || true
+#${OPENNMS_HOME}/bin/config-tester || true
 
 echo "Starting opennms ..."
 /etc/init.d/opennms start
