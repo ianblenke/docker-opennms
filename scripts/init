@@ -4,23 +4,38 @@ set -ex
 export OPENNMS_HOME=/usr/share/opennms
 export OPENNMS_PIDFILE=/var/run/opennms/opennms.pid
 
-DATABASE_HOST=${DATABASE_HOST:-localhost}
-DATABASE_PORT=${DATABASE_PORT:-5432}
+PG_DATABASE=${PG_DATABASE:-opennms}
+PG_USER=${PG_USER:-postgres}
+PG_HOST=${PG_HOST:-${POSTGRESQL_PORT_5432_TCP_ADDR:-localhost}}
+PG_PORT=${PG_PORT:-${POSTGRESQL_PORT_5432_TCP_PORT:-5432}}
 
-# is a postgresql database linked?
-if [ -n "${POSTGRESQL_PORT_5432_TCP_ADDR}" ]; then
-  DATABASE_HOST=${DATABASE_HOST:-${POSTGRESQL_PORT_5432_TCP_ADDR}}
-  DATABASE_PORT=${DATABASE_PORT:-${POSTGRESQL_PORT_5432_TCP_PORT}}
-fi
+export PG_HOST PG_PORT PG_DATABASE PG_USER
 
 # Run a local postgresql server if necessary
-if [ "${DATABASE_HOST}" == "localhost" ]; then
+if [ "${PG_HOST}" == "localhost" ]; then
   # Open up postgresql security
   sed -i -e 's/peer/trust/g' -e 's/md5/trust/g' /etc/postgresql/*/main/pg_hba.conf
 
   echo "Starting postgresql ..."
   /etc/init.d/postgresql start
+
+  # Change template0 from ASCII to UTF8
+  sudo -u postgres psql -c "update pg_database set datallowconn = TRUE where datname = 'template0';"
+  sudo -u postgres psql template0 -c "update pg_database set datistemplate = FALSE where datname = 'template1';"
+  sudo -u postgres psql template0 -c "drop database template1;"
+  sudo -u postgres psql template0 -c "create database template1 with template = template0 encoding = 'UTF8';"
+  sudo -u postgres psql template0 -c "update pg_database set datistemplate = TRUE where datname = 'template1';"
+  sudo -u postgres psql template1 -c "update pg_database set datallowconn = FALSE where datname = 'template0';"
 fi
+
+[ -n "$INTENTIONALLY_SLEEP" ] && sleep $INTENTIONALLY_SLEEP
+
+perl -pi -e 's/^JAVA/#JAVA/' /etc/default/opennms
+echo JAVA_HOME=/usr/lib/jvm/$(ls -1t /usr/lib/jvm | head -1) >> /etc/default/opennms
+
+${OPENNMS_HOME}/bin/install -dis
+/usr/sbin/install_iplike.sh || true
+${OPENNMS_HOME}/bin/config-tester || true
 
 echo "Starting opennms ..."
 /etc/init.d/opennms start
@@ -37,14 +52,14 @@ do
   sleep 1
 done
 
-[ -n "$INTENTIONALLY_SLEEP" ] && sleep $INTENTIONALLY_SLEEP
-
-${OPENNMS_HOME}/bin/config-tester || true
-${OPENNMS_HOME}/bin/install -dis
-/usr/sbin/install_iplike.sh || true
-
 # Wait here until opennms exits
-wait $(cat ${OPENNMS_PIDFILE})
+OPENNMS_PID=$(cat ${OPENNMS_PIDFILE})
+true
+while [[ ${?} == 0 ]]      # Repeat until the process has terminated.
+do
+    sleep 10               # Wait a bit before testing.
+    ps -p ${OPENNMS_PID} >/dev/null  # Check if the process has terminated.
+done
 
 # As the ENTRYPOINT script, when this exits the docker container will Exit.
 exit 0

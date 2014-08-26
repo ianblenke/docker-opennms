@@ -19,8 +19,8 @@ There is an exported docker volume of /var/lib/postgresql to allow persistence o
 
 Additionally, the database variables may be overridden from the above using:
 
-    DATABASE_HOST
-    DATABASE_PORT
+    PG_HOST
+    PG_PORT
 
 This script will create and run database migrations which should be idempotent.
 
