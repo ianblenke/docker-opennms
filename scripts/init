@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -e
 
 export OPENNMS_HOME=/usr/share/opennms
 export OPENNMS_PIDFILE=/var/run/opennms.pid
