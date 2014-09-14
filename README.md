@@ -69,12 +69,12 @@ Note: if you specify a password above, the OpenNMS `ip_like.sh` script will erro
 
 The JDBC connection pooling has a few configurable knobs using environment variables:
 
-  <connection-pool factory="${JDBC_CONNECTION_FACTORY:-org.opennms.core.db.C3P0ConnectionFactory}"
-   idleTimeout="${JDBC_IDLE_TIMEOUT:-600}"
-   loginTimeout="${JDBC_LOGIN_TIMEOUT:-3}"
-   minPool="${JDBC_MIN_POOL:-10}"
-   maxPool="${JDBC_MAX_POOL:-50}"
-   maxSize="${JDBC_MAX_SIZE:-500}" />
+    <connection-pool factory="${JDBC_CONNECTION_FACTORY:-org.opennms.core.db.C3P0ConnectionFactory}"
+     idleTimeout="${JDBC_IDLE_TIMEOUT:-600}"
+     loginTimeout="${JDBC_LOGIN_TIMEOUT:-3}"
+     minPool="${JDBC_MIN_POOL:-10}"
+     maxPool="${JDBC_MAX_POOL:-50}"
+     maxSize="${JDBC_MAX_SIZE:-500}" />
 
 You don't need to do this on your own, because there is an [automated build](https://registry.hub.docker.com/u/ianblenke/opennms/) for this repository, but if you really want:
 
